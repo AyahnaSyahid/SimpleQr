@@ -1,5 +1,4 @@
 name: Py-Installer Build Windows
-name: Build and Deploy Application
 
 on:
   push:
