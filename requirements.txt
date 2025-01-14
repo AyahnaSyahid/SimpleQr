@@ -1,0 +1,3 @@
+segno==1.4.0        # QR code generator
+pyqt5==5.15.9       # PyQt5 GUI library
+pyinstaller==5.13.0 # Tool for creating executables
