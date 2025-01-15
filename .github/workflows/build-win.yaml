@@ -1,0 +1,76 @@
+name: Build Qt 5.15.16 WINDOWS
+
+on:
+  workflow_dispatch:  # Trigger manually from GitHub UI
+
+jobs:
+  
+  build-windows:
+    runs-on: windows-latest  # Windows 7 build using MinGW 64-bit
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install MinGW-w64 and dependencies
+        run: |
+          choco install mingw --version 8.1.0
+          choco install make
+          choco install wget
+          choco install tar
+          choco install python
+
+      - name: Download Qt 5.15.16 source
+        run: |
+          wget https://mirrors.cloud.tencent.com/qt/archive/qt/5.15/5.15.16/single/qt-everywhere-opensource-src-5.15.16.tar.xz
+          tar -xvf qt-everywhere-opensource-src-5.15.16.tar.xz
+
+      - name: Download OpenSSL source
+        run: |
+          wget https://www.openssl.org/source/openssl-1.1.1l.tar.gz
+          tar -xvf openssl-1.1.1l.tar.gz
+
+      - name: Build static OpenSSL
+        run: |
+          cd openssl-1.1.1l
+          perl Configure mingw64 no-shared --prefix=C:/openssl
+          make
+          make install
+          cd ..
+
+      - name: Configure and build Qt (Release)
+        run: |
+          mkdir qt-build-rel
+          cd qt-build-rel
+          ../qt-everywhere-opensource-src-5.15.16/configure -prefix C:/Qt/5.15.16 \
+                      -opensource \
+                      -nomake examples \
+                      -nomake tests \
+                      -openssl-linked \
+                      -I C:/openssl/include \
+                      -L C:/openssl/lib
+          mingw32-make -j$(nproc)
+          mingw32-make install
+          cd ..
+
+      - name: Configure and build Qt (Debug)
+        run: |
+          mkdir qt-build-debug
+          cd qt-build-debug
+          ../qt-everywhere-opensource-src-5.15.16/configure -prefix C:/Qt/5.15.16 \
+                      -opensource \
+                      -nomake examples \
+                      -nomake tests \
+                      -openssl-linked \
+                      -I C:/openssl/include \
+                      -L C:/openssl/lib \
+                      -qtlibinfix d \
+                      -debug
+          mingw32-make -j$(nproc)
+          mingw32-make install
+          cd ..
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Build
+          path: C:/Qt/*
